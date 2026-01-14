@@ -1,0 +1,7 @@
+max_width = 79
+struct_lit_width = 79
+struct_variant_width = 79
+single_line_if_else_max_width = 79
+single_line_let_else_max_width = 79
+struct_field_align_threshold = 20
+fn_single_line = true

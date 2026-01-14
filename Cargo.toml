@@ -1,0 +1,15 @@
+[package]
+name = "hui"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+
+[dependencies]
+glam = "^0.30"
+bytemuck = "^1.24"
+
+[dependencies.wgpu]
+version = "^27.0"
+default-features = false
+features = ["std", "parking_lot", "wgsl", "dx12"]
