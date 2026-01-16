@@ -12,19 +12,19 @@ use wgpu::{
 };
 
 #[rustfmt::skip]
-const VERTICES: &'static [[f32; 3]; 4] = &[
+const VERTICES: &[[f32; 3]; 4] = &[
     [-1.0,  1.0, 0.0],
     [-1.0, -1.0, 0.0],
     [ 1.0,  1.0, 0.0],
     [ 1.0, -1.0, 0.0],
 ];
 #[rustfmt::skip]
-const INDICES: &'static [u16; 6] = &[
+const INDICES: &[u16; 6] = &[
     1, 0, 2,
     1, 3, 2,
 ];
 
-#[repr(C)]
+#[repr(C, align(16))]
 #[derive(Clone, Copy, Zeroable, Pod)]
 pub struct Rectangle {
     pub mvp:           [[f32; 4]; 4],
@@ -36,7 +36,7 @@ pub struct Rectangle {
 }
 
 impl Rectangle {
-    pub const LAYOUT: VertexBufferLayout<'static> = {
+    pub(crate) const LAYOUT: VertexBufferLayout<'static> = {
         let instance_buffer_atributes = &vertex_attr_array![
             1 => Float32x4, // MVP matrix, row 0
             2 => Float32x4, // MVP matrix, row 1
@@ -58,15 +58,17 @@ impl Rectangle {
 }
 
 pub struct RectangleRenderer {
-    render_pipeline: RenderPipeline,
-    vertex_buffer:   Buffer,
-    index_buffer:    Buffer,
-    instance_buffer: Buffer,
-    instance_count:  u32,
-    instance_bytes:  Vec<u8>,
+    render_pipeline:    RenderPipeline,
+    vertex_buffer:      Buffer,
+    index_buffer:       Buffer,
+    instance_buffer:    Buffer,
+    instance_bytes:     Vec<u8>,
+    instance_count:     u64,
+    max_instance_count: u64,
 }
 
 impl RectangleRenderer {
+    #[must_use]
     pub fn new(
         device: &Device,
         surface_format: TextureFormat,
@@ -106,10 +108,14 @@ impl RectangleRenderer {
             instance_buffer,
             instance_bytes,
             instance_count: 0,
+            max_instance_count,
         }
     }
 
     pub fn add(&mut self, instance: &Rectangle) {
+        if self.instance_count == self.max_instance_count {
+            return;
+        }
         let offset = self.instance_count as usize;
 
         let bytes = bytemuck::bytes_of(instance);
@@ -125,8 +131,7 @@ impl RectangleRenderer {
         }
         render_pass.set_pipeline(&self.render_pipeline);
 
-        let bytes_written =
-            (self.instance_count * Rectangle::SIZE as u32) as u64;
+        let bytes_written = self.instance_count * Rectangle::SIZE;
         queue.write_buffer(
             &self.instance_buffer,
             0,
@@ -145,7 +150,7 @@ impl RectangleRenderer {
         render_pass.draw_indexed(
             0..INDICES.len() as u32,
             0,
-            0..self.instance_count,
+            0..self.instance_count as u32,
         );
         self.instance_count = 0;
     }

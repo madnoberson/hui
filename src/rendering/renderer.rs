@@ -16,6 +16,7 @@ pub struct Renderer {
 }
 
 impl Renderer {
+    #[must_use]
     pub fn new(
         device: &Device,
         surface_config: &SurfaceConfiguration,
@@ -83,14 +84,9 @@ fn create_depth_texture_view(
     width: u32,
     height: u32,
 ) -> TextureView {
-    let size = Extent3d {
-        width:                 width,
-        height:                height,
-        depth_or_array_layers: 1,
-    };
     let texture_desc = TextureDescriptor {
         label:           Some("hui::depth_texture"),
-        size:            size,
+        size:            Extent3d { width, height, depth_or_array_layers: 1 },
         mip_level_count: 1,
         sample_count:    1,
         dimension:       TextureDimension::D2,
