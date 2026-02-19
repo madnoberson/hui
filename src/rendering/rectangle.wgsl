@@ -52,14 +52,24 @@ fn fs_main(input: VertexOutput) -> @location(0) vec4<f32> {
     let aa_width = fwidth(distance) * 1.4;
     let alpha = 1.0 - smoothstep(0.0, aa_width, distance);
 
-    let inner_distance = distance + input.border_size;
-    let stroke_alpha_raw = (1.0 - smoothstep(0.0, aa_width, distance))
-        * smoothstep(0.0, aa_width, inner_distance);
+    let border = input.border_size;
 
-    let stroke_alpha = smoothstep(aa_width * -0.5, aa_width * 1.5, -distance)
-        * smoothstep(aa_width * -0.5, aa_width * 1.5, inner_distance + aa_width);
+    let inner_distance = sd_rounded_rect(p, input.half_size - r - border, max(r - border, 0.0));
+    let border_alpha = (1.0 - smoothstep(0.0, aa_width, distance)) * smoothstep(-aa_width, 0.0, inner_distance);
 
-    return vec4(input.fill_color.rgb, input.fill_color.a * alpha);
+    let fill_alpha = 1.0 - smoothstep(0.0, aa_width, inner_distance);
+
+    var color = vec4<f32>(input.fill_color.rgb, input.fill_color.a * fill_alpha);
+
+    let b_a = input.border_color.a * border_alpha;
+    color = vec4<f32>(
+        mix(color.rgb, input.border_color.rgb, b_a),
+        color.a + b_a * (1.0 - color.a)
+    );
+
+    color.a *= alpha;
+
+    return color;
 }
 
 fn sd_rounded_rect(p: vec2<f32>, half_size: vec2<f32>, r: f32) -> f32 {

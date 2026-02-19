@@ -43,6 +43,11 @@ impl Renderer {
         }
     }
 
+    pub fn resize(&mut self, device: &Device, width: u32, height: u32) {
+        self.depth_texture_view =
+            create_depth_texture_view(device, width, height);
+    }
+
     pub fn add_rectangle(&mut self, instance: &Rectangle) {
         self.rectangle_renderer.add(instance);
     }

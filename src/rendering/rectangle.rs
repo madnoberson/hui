@@ -28,9 +28,9 @@ const INDICES: &[u16; 6] = &[
 #[derive(Clone, Copy, Zeroable, Pod)]
 pub struct Rectangle {
     pub mvp:           [[f32; 4]; 4],
+    pub half_size:     [f32; 2],
     pub fill_color:    [f32; 4],
     pub border_color:  [f32; 4],
-    pub half_size:     [f32; 2],
     pub corner_radius: f32,
     pub border_size:   f32,
 }
@@ -116,10 +116,10 @@ impl RectangleRenderer {
         if self.instance_count == self.max_instance_count {
             return;
         }
-        let offset = self.instance_count as usize;
+        let offset = self.instance_count * Rectangle::SIZE;
 
         let bytes = bytemuck::bytes_of(instance);
-        let index = offset..offset + Rectangle::SIZE as usize;
+        let index = offset as usize..(offset + Rectangle::SIZE) as usize;
         self.instance_bytes[index].copy_from_slice(bytes);
 
         self.instance_count += 1;
