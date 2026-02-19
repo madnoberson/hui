@@ -32,12 +32,14 @@ const INDICES: &[u16; 6] = &[
 #[repr(C, align(16))]
 #[derive(Clone, Copy, Zeroable, Pod)]
 pub struct Rectangle {
-    pub mvp:           [[f32; 4]; 4],
-    pub half_size:     [f32; 2],
-    pub fill_color:    [f32; 4],
-    pub border_color:  [f32; 4],
-    pub corner_radius: f32,
-    pub border_size:   f32,
+    pub mvp:          [[f32; 4]; 4],
+    pub fill_color:   [f32; 4],
+    pub border_color: [f32; 4],
+    pub corner_radii: [f32; 4],
+    pub half_size:    [f32; 2],
+    pub border_size:  f32,
+    #[doc(hidden)]
+    pub _padding:     f32,
 }
 
 impl Rectangle {
@@ -47,10 +49,10 @@ impl Rectangle {
             2 => Float32x4, // MVP matrix, row 1
             3 => Float32x4, // MVP matrix, row 2
             4 => Float32x4, // MVP matrix, row 3
-            5 => Float32x2, // Half size
-            6 => Float32x4, // Fill color
-            7 => Float32x4, // Border color
-            8 => Float32,   // Corner radius
+            5 => Float32x4, // Fill color
+            6 => Float32x4, // Border color
+            7 => Float32x4, // Corner radii
+            8 => Float32x2, // Half size
             9 => Float32,   // Border size
         ];
         VertexBufferLayout {
