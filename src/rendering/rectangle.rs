@@ -1,4 +1,5 @@
 use bytemuck::{Pod, Zeroable};
+use slotmap::{DefaultKey, SlotMap};
 use wgpu::{
     BlendComponent, BlendFactor, BlendOperation, BlendState, Buffer,
     BufferDescriptor, BufferUsages, ColorTargetState, ColorWrites,
@@ -10,6 +11,10 @@ use wgpu::{
     util::{BufferInitDescriptor, DeviceExt},
     vertex_attr_array,
 };
+
+pub type RectangleId = DefaultKey;
+
+const MAX_INSTANCE_COUNT: u64 = 1024;
 
 #[rustfmt::skip]
 const VERTICES: &[[f32; 3]; 4] = &[
@@ -49,31 +54,27 @@ impl Rectangle {
             9 => Float32,   // Border size
         ];
         VertexBufferLayout {
-            array_stride: Self::SIZE,
+            array_stride: Self::SIZE as u64,
             step_mode:    VertexStepMode::Instance,
             attributes:   instance_buffer_atributes,
         }
     };
-    pub const SIZE: u64 = size_of::<Self>() as u64;
+    pub const SIZE: usize = size_of::<Self>();
 }
 
 pub struct RectangleRenderer {
-    render_pipeline:    RenderPipeline,
-    vertex_buffer:      Buffer,
-    index_buffer:       Buffer,
-    instance_buffer:    Buffer,
-    instance_bytes:     Vec<u8>,
-    instance_count:     u64,
-    max_instance_count: u64,
+    render_pipeline: RenderPipeline,
+    vertex_buffer:   Buffer,
+    index_buffer:    Buffer,
+    instance_buffer: Buffer,
+    instances:       SlotMap<RectangleId, Rectangle>,
+    instance_bytes:  Vec<u8>,
+    is_dirty:        bool,
 }
 
 impl RectangleRenderer {
     #[must_use]
-    pub fn new(
-        device: &Device,
-        surface_format: TextureFormat,
-        max_instance_count: u64,
-    ) -> Self {
+    pub fn new(device: &Device, surface_format: TextureFormat) -> Self {
         let render_pipeline = create_render_pipeline(device, surface_format);
 
         let vertex_buffer_desc = BufferInitDescriptor {
@@ -92,56 +93,69 @@ impl RectangleRenderer {
 
         let instance_buffer_desc = BufferDescriptor {
             label:              Some("hui::rectangle::instance_buffer"),
-            size:               max_instance_count * Rectangle::SIZE,
+            size:               MAX_INSTANCE_COUNT * Rectangle::SIZE as u64,
             usage:              BufferUsages::VERTEX | BufferUsages::COPY_DST,
             mapped_at_creation: false,
         };
         let instance_buffer = device.create_buffer(&instance_buffer_desc);
 
-        let instance_bytes =
-            vec![0u8; (max_instance_count * Rectangle::SIZE) as usize];
-
         Self {
             render_pipeline,
             vertex_buffer,
             index_buffer,
+            instances: SlotMap::new(),
             instance_buffer,
-            instance_bytes,
-            instance_count: 0,
-            max_instance_count,
+            instance_bytes: Vec::new(),
+            is_dirty: false,
         }
     }
 
-    pub fn add(&mut self, instance: &Rectangle) {
-        if self.instance_count == self.max_instance_count {
-            return;
+    pub fn add(&mut self, instance: Rectangle) -> RectangleId {
+        self.is_dirty = true;
+        self.instances.insert(instance)
+    }
+
+    pub fn remove(&mut self, id: RectangleId) {
+        self.is_dirty = true;
+        self.instances.remove(id);
+    }
+
+    pub fn update(&mut self, id: RectangleId, instance: Rectangle) {
+        if let Some(rectangle) = self.instances.get_mut(id) {
+            self.is_dirty = true;
+            *rectangle = instance;
         }
-        let offset = self.instance_count * Rectangle::SIZE;
-
-        let bytes = bytemuck::bytes_of(instance);
-        let index = offset as usize..(offset + Rectangle::SIZE) as usize;
-        self.instance_bytes[index].copy_from_slice(bytes);
-
-        self.instance_count += 1;
     }
 
     pub fn render(&mut self, queue: &Queue, render_pass: &mut RenderPass) {
-        if self.instance_count == 0 {
+        if self.instances.is_empty() {
             return;
         }
+
+        if self.is_dirty {
+            self.instance_bytes.clear();
+
+            let instance_bytes_iter =
+                self.instances.values().flat_map(bytemuck::bytes_of);
+            self.instance_bytes.extend(instance_bytes_iter);
+
+            self.is_dirty = false;
+        }
+
+        let bytes_written = self.instances.len() * Rectangle::SIZE;
         render_pass.set_pipeline(&self.render_pipeline);
 
-        let bytes_written = self.instance_count * Rectangle::SIZE;
         queue.write_buffer(
             &self.instance_buffer,
             0,
-            &self.instance_bytes[..bytes_written as usize],
+            &self.instance_bytes[..bytes_written],
         );
 
         let vertex_buffer = self.vertex_buffer.slice(..);
         render_pass.set_vertex_buffer(0, vertex_buffer);
 
-        let instance_buffer = self.instance_buffer.slice(..bytes_written);
+        let instance_buffer =
+            self.instance_buffer.slice(..bytes_written as u64);
         render_pass.set_vertex_buffer(1, instance_buffer);
 
         let index_buffer = self.index_buffer.slice(..);
@@ -150,9 +164,8 @@ impl RectangleRenderer {
         render_pass.draw_indexed(
             0..INDICES.len() as u32,
             0,
-            0..self.instance_count as u32,
+            0..self.instances.len() as u32,
         );
-        self.instance_count = 0;
     }
 }
 

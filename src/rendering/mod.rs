@@ -1,6 +1,6 @@
 mod rectangle;
 mod renderer;
 
-pub use rectangle::Rectangle;
 use rectangle::RectangleRenderer;
+pub use rectangle::{Rectangle, RectangleId};
 pub use renderer::Renderer;

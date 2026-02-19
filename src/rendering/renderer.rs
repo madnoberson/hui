@@ -6,7 +6,7 @@ use wgpu::{
     TextureViewDescriptor,
 };
 
-use super::{Rectangle, RectangleRenderer};
+use super::{Rectangle, RectangleId, RectangleRenderer};
 
 pub struct Renderer {
     depth_texture_view: TextureView,
@@ -22,18 +22,14 @@ impl Renderer {
         surface_config: &SurfaceConfiguration,
         color_operations: Operations<Color>,
         depth_operations: Option<Operations<f32>>,
-        max_rectangle_count: u64,
     ) -> Self {
         let depth_texture_view = create_depth_texture_view(
             device,
             surface_config.width,
             surface_config.height,
         );
-        let rectangle_renderer = RectangleRenderer::new(
-            device,
-            surface_config.format,
-            max_rectangle_count,
-        );
+        let rectangle_renderer =
+            RectangleRenderer::new(device, surface_config.format);
 
         Self {
             depth_texture_view,
@@ -43,13 +39,25 @@ impl Renderer {
         }
     }
 
+    #[inline]
     pub fn resize(&mut self, device: &Device, width: u32, height: u32) {
         self.depth_texture_view =
             create_depth_texture_view(device, width, height);
     }
 
-    pub fn add_rectangle(&mut self, instance: &Rectangle) {
-        self.rectangle_renderer.add(instance);
+    #[inline]
+    pub fn add_rectangle(&mut self, instance: Rectangle) -> RectangleId {
+        self.rectangle_renderer.add(instance)
+    }
+
+    #[inline]
+    pub fn remove_rectangle(&mut self, id: RectangleId) {
+        self.rectangle_renderer.remove(id);
+    }
+
+    #[inline]
+    pub fn update_rectangle(&mut self, id: RectangleId, instance: Rectangle) {
+        self.rectangle_renderer.update(id, instance);
     }
 
     pub fn render(
