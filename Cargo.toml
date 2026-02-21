@@ -9,6 +9,8 @@ edition = "2024"
 glam = "^0.30"
 bytemuck = "^1.24"
 slotmap = "^1.1"
+bon = "^3.9"
+getset = "^0.1"
 
 [dependencies.wgpu]
 version = "^27.0"
