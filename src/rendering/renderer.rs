@@ -46,18 +46,22 @@ impl Renderer {
     }
 
     #[inline]
-    pub fn add_rectangle(&mut self, instance: Rectangle) -> RectangleId {
+    #[must_use]
+    pub fn get_mut_rectangle(
+        &mut self,
+        id: RectangleId,
+    ) -> Option<&mut Rectangle> {
+        self.rectangle_renderer.get_mut(id)
+    }
+
+    #[inline]
+    pub fn add_rectangle(&mut self, instance: &Rectangle) -> RectangleId {
         self.rectangle_renderer.add(instance)
     }
 
     #[inline]
-    pub fn remove_rectangle(&mut self, id: RectangleId) {
-        self.rectangle_renderer.remove(id);
-    }
-
-    #[inline]
-    pub fn update_rectangle(&mut self, id: RectangleId, instance: Rectangle) {
-        self.rectangle_renderer.update(id, instance);
+    pub fn remove_rectangle(&mut self, id: RectangleId) -> Option<Rectangle> {
+        self.rectangle_renderer.remove(id)
     }
 
     pub fn render(

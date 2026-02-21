@@ -78,6 +78,13 @@ impl Rectangle {
     pub const SIZE: usize = size_of::<Self>();
 }
 
+#[derive(PartialEq, Eq)]
+enum Dirtiness {
+    Clean,
+    RedrawRequired,
+    RebuildAndRedrawRequired,
+}
+
 pub struct RectangleRenderer {
     render_pipeline: RenderPipeline,
     vertex_buffer:   Buffer,
@@ -85,7 +92,7 @@ pub struct RectangleRenderer {
     instance_buffer: Buffer,
     instances:       SlotMap<RectangleId, Rectangle>,
     instance_bytes:  Vec<u8>,
-    is_dirty:        bool,
+    dirtiness:       Dirtiness,
 }
 
 impl RectangleRenderer {
@@ -122,25 +129,39 @@ impl RectangleRenderer {
             instances: SlotMap::new(),
             instance_buffer,
             instance_bytes: Vec::new(),
-            is_dirty: false,
+            dirtiness: Dirtiness::Clean,
         }
     }
 
-    pub fn add(&mut self, instance: Rectangle) -> RectangleId {
-        self.is_dirty = true;
-        self.instances.insert(instance)
+    #[inline]
+    #[must_use]
+    pub fn is_redraw_required(&self) -> bool {
+        self.dirtiness != Dirtiness::Clean
     }
 
-    pub fn remove(&mut self, id: RectangleId) {
-        self.is_dirty = true;
-        self.instances.remove(id);
+    #[inline]
+    #[must_use]
+    pub fn get_mut(&mut self, id: RectangleId) -> Option<&mut Rectangle> {
+        self.dirtiness = Dirtiness::RebuildAndRedrawRequired;
+        self.instances.get_mut(id)
     }
 
-    pub fn update(&mut self, id: RectangleId, instance: Rectangle) {
-        if let Some(rectangle) = self.instances.get_mut(id) {
-            self.is_dirty = true;
-            *rectangle = instance;
+    pub fn add(&mut self, instance: &Rectangle) -> RectangleId {
+        if self.dirtiness != Dirtiness::RebuildAndRedrawRequired {
+            self.dirtiness = Dirtiness::RedrawRequired;
         }
+        let id = self.instances.insert(*instance);
+
+        let new_instance_bytes = bytemuck::bytes_of(instance);
+        self.instance_bytes.extend_from_slice(new_instance_bytes);
+
+        id
+    }
+
+    #[inline]
+    pub fn remove(&mut self, id: RectangleId) -> Option<Rectangle> {
+        self.dirtiness = Dirtiness::RebuildAndRedrawRequired;
+        self.instances.remove(id)
     }
 
     pub fn render(&mut self, queue: &Queue, render_pass: &mut RenderPass) {
@@ -148,14 +169,14 @@ impl RectangleRenderer {
             return;
         }
 
-        if self.is_dirty {
+        if self.dirtiness == Dirtiness::RebuildAndRedrawRequired {
             self.instance_bytes.clear();
 
             let instance_bytes_iter =
                 self.instances.values().flat_map(bytemuck::bytes_of);
             self.instance_bytes.extend(instance_bytes_iter);
 
-            self.is_dirty = false;
+            self.dirtiness = Dirtiness::Clean;
         }
 
         let bytes_written = self.instances.len() * Rectangle::SIZE;
