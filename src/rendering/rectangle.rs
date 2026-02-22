@@ -4,12 +4,12 @@ use getset::Getters;
 use slotmap::{DefaultKey, SlotMap};
 use wgpu::{
     BlendComponent, BlendFactor, BlendOperation, BlendState, Buffer,
-    BufferDescriptor, BufferUsages, ColorTargetState, ColorWrites,
-    CompareFunction, DepthStencilState, Device, FragmentState, FrontFace,
-    IndexFormat, MultisampleState, PipelineLayoutDescriptor, PolygonMode,
-    PrimitiveState, PrimitiveTopology, Queue, RenderPass, RenderPipeline,
-    RenderPipelineDescriptor, ShaderModuleDescriptor, ShaderSource,
-    TextureFormat, VertexBufferLayout, VertexState, VertexStepMode,
+    BufferDescriptor, BufferUsages, ColorTargetState, ColorWrites, Device,
+    FragmentState, FrontFace, IndexFormat, MultisampleState,
+    PipelineLayoutDescriptor, PolygonMode, PrimitiveState, PrimitiveTopology,
+    Queue, RenderPass, RenderPipeline, RenderPipelineDescriptor,
+    ShaderModuleDescriptor, ShaderSource, TextureFormat, VertexBufferLayout,
+    VertexState, VertexStepMode,
     util::{BufferInitDescriptor, DeviceExt},
     vertex_attr_array,
 };
@@ -266,13 +266,6 @@ fn create_render_pipeline(
         unclipped_depth:    false,
         conservative:       false,
     };
-    let depth_stencil_state = DepthStencilState {
-        format:              TextureFormat::Depth32Float,
-        depth_write_enabled: true,
-        depth_compare:       CompareFunction::Less,
-        stencil:             Default::default(),
-        bias:                Default::default(),
-    };
     let multisample_state = MultisampleState {
         count: 1,
         mask: !0,
@@ -293,7 +286,7 @@ fn create_render_pipeline(
         vertex:        vertex_state,
         fragment:      Some(fragment_state),
         primitive:     primitive_state,
-        depth_stencil: Some(depth_stencil_state),
+        depth_stencil: None,
         multisample:   multisample_state,
         multiview:     None,
         cache:         None,
