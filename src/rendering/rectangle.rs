@@ -133,14 +133,14 @@ impl RectangleRenderer {
         }
     }
 
-    #[inline]
     #[must_use]
+    #[inline(always)]
     pub fn is_redraw_required(&self) -> bool {
         self.dirtiness != Dirtiness::Clean
     }
 
-    #[inline]
     #[must_use]
+    #[inline(always)]
     pub fn get_mut(&mut self, id: RectangleId) -> Option<&mut Rectangle> {
         self.dirtiness = Dirtiness::RebuildAndRedrawRequired;
         self.instances.get_mut(id)
@@ -158,7 +158,7 @@ impl RectangleRenderer {
         id
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn remove(&mut self, id: RectangleId) -> Option<Rectangle> {
         self.dirtiness = Dirtiness::RebuildAndRedrawRequired;
         self.instances.remove(id)
@@ -175,8 +175,6 @@ impl RectangleRenderer {
             let instance_bytes_iter =
                 self.instances.values().flat_map(bytemuck::bytes_of);
             self.instance_bytes.extend(instance_bytes_iter);
-
-            self.dirtiness = Dirtiness::Clean;
         }
 
         let bytes_written = self.instances.len() * Rectangle::SIZE;
@@ -203,6 +201,7 @@ impl RectangleRenderer {
             0,
             0..self.instances.len() as u32,
         );
+        self.dirtiness = Dirtiness::Clean
     }
 }
 
