@@ -103,7 +103,7 @@ impl Renderer {
                 ops:            color_operations,
             };
             let render_pass_desc = RenderPassDescriptor {
-                label:                    Some("hui::render_pass"),
+                label:                    Some("hui::common_render_pass"),
                 color_attachments:        &[Some(color_attachment)],
                 depth_stencil_attachment: None,
                 occlusion_query_set:      None,
@@ -127,7 +127,7 @@ impl Renderer {
             ops:            color_operations,
         };
         let composite_render_pass_desc = RenderPassDescriptor {
-            label:                    Some("hui::composite_pass"),
+            label:                    Some("hui::composite_render_pass"),
             color_attachments:        &[Some(color_attachment)],
             depth_stencil_attachment: None,
             occlusion_query_set:      None,

@@ -3,14 +3,25 @@ struct VertexOutput {
     @location(0)       uv:            vec2<f32>,
 }
 
+const positions = array<vec2<f32>, 3>(
+    vec2<f32>(-1.0, -1.0),
+    vec2<f32>( 3.0, -1.0),
+    vec2<f32>(-1.0,  3.0),
+);
+const uvs = array<vec2<f32>, 3>(
+    vec2<f32>(0.0, 1.0),
+    vec2<f32>(2.0, 1.0),
+    vec2<f32>(0.0, -1.0),
+);
+
 @vertex
 fn vs_main(@builtin(vertex_index) vertex_index: u32) -> VertexOutput {
-    let x = f32((vertex_index & 1u) * 2u) - 1.0;
-    let y = f32((vertex_index >> 1u) * 2u) - 1.0;
+    let pos = positions[vertex_index];
+    let uv  = uvs[vertex_index];
 
     var output: VertexOutput;
-    output.clip_position = vec4<f32>(x, y, 0.0, 1.0);
-    output.uv            = vec2<f32>(x * 0.5 + 0.5, 1.0 - (y * 0.5 + 0.5));
+    output.clip_position = vec4<f32>(pos, 0.0, 1.0);
+    output.uv            = uv;
 
     return output;
 }

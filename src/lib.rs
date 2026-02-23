@@ -1,3 +1,5 @@
-mod rendering;
+mod components;
+mod core;
 
-pub use rendering::{Rectangle, Renderer};
+pub use components::{Block, BlockStyle, Positioned};
+pub use core::{Rectangle, RectangleId, Renderer};

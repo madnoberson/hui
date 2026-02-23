@@ -1,6 +1,5 @@
 use bon::Builder;
 use bytemuck::{Pod, Zeroable};
-use getset::Getters;
 use slotmap::{DefaultKey, SlotMap};
 use wgpu::{
     BlendComponent, BlendFactor, BlendOperation, BlendState, Buffer,
@@ -32,20 +31,18 @@ const INDICES: &[u16; 6] = &[
 ];
 
 #[repr(C, align(16))]
-#[derive(Clone, Copy, Zeroable, Pod)]
-#[derive(Builder, Getters)]
-#[get = "pub"]
+#[derive(Clone, Copy, Zeroable, Pod, Builder)]
 pub struct Rectangle {
-    mvp:           [[f32; 4]; 4],
-    fill_color:    [f32; 4],
-    border_color:  [f32; 4],
-    corner_radii:  [f32; 4],
-    shadow_color:  [f32; 4],
-    half_size:     [f32; 2],
-    border_size:   f32,
-    shadow_spread: f32,
-    shadow_offset: [f32; 2],
-    shadow_blur:   f32,
+    pub mvp:           [[f32; 4]; 4],
+    pub fill_color:    [f32; 4],
+    pub border_color:  [f32; 4],
+    pub corner_radii:  [f32; 4],
+    pub shadow_color:  [f32; 4],
+    pub half_size:     [f32; 2],
+    pub border_size:   f32,
+    pub shadow_spread: f32,
+    pub shadow_offset: [f32; 2],
+    pub shadow_blur:   f32,
 
     #[doc(hidden)]
     #[builder(skip)]
@@ -85,7 +82,7 @@ enum Dirtiness {
     RebuildAndRedrawRequired,
 }
 
-pub struct RectangleRenderer {
+pub(crate) struct RectangleRenderer {
     render_pipeline: RenderPipeline,
     vertex_buffer:   Buffer,
     index_buffer:    Buffer,
