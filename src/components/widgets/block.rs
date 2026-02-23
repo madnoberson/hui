@@ -1,16 +1,22 @@
 use bon::Builder;
 use glam::{Mat4, Quat, Vec3};
 
-use crate::{Rectangle, RectangleId, Renderer};
+use crate::{Rectangle, Renderer};
+use block_position_markers::{Positioned, Unpositioned};
 
-pub struct Unpositioned;
+pub mod block_position_markers {
+    use crate::RectangleId;
 
-pub struct Positioned {
-    rectangle_id: RectangleId,
-    position:     [f32; 2],
+    pub struct Unpositioned;
+
+    pub struct Positioned {
+        pub(super) rectangle_id: RectangleId,
+        pub(super) position:     [f32; 2],
+    }
 }
 
 #[derive(Builder, Clone)]
+#[builder(const)]
 pub struct BlockStyle {
     #[builder(default = [1.0, 1.0, 1.0, 1.0])]
     fill_color:    [f32; 4],
@@ -30,7 +36,7 @@ pub struct BlockStyle {
     shadow_spread: f32,
 }
 
-pub struct Block<State> {
+pub struct Block<State = Unpositioned> {
     state: State,
     style: BlockStyle,
     size:  [f32; 2],
@@ -39,7 +45,7 @@ pub struct Block<State> {
 impl Block<Unpositioned> {
     #[must_use]
     #[inline(always)]
-    pub fn new(size: [f32; 2], style: BlockStyle) -> Self {
+    pub const fn new(size: [f32; 2], style: BlockStyle) -> Self {
         Self { state: Unpositioned, style, size }
     }
 
@@ -61,10 +67,12 @@ impl Block<Unpositioned> {
     }
 
     #[inline(always)]
-    pub fn set_size(&mut self, size: [f32; 2]) { self.size = size; }
+    pub const fn set_size(&mut self, size: [f32; 2]) { self.size = size; }
 
     #[inline(always)]
-    pub fn set_style(&mut self, style: BlockStyle) { self.style = style; }
+    pub const fn set_style(&mut self, style: BlockStyle) {
+        self.style = style;
+    }
 }
 
 impl Block<Positioned> {
@@ -97,7 +105,7 @@ impl Block<Positioned> {
             let mvp = *view_projection * model;
 
             rectangle.mvp = mvp.to_cols_array_2d();
-            rectangle.half_size = [half_size[0], half_size[1]];
+            rectangle.half_size = half_size;
         }
         self.size = size;
     }
@@ -115,7 +123,7 @@ impl Block<Positioned> {
             let mvp = *view_projection * model;
 
             rectangle.mvp = mvp.to_cols_array_2d();
-            rectangle.half_size = [half_size[0], half_size[1]];
+            rectangle.half_size = half_size;
         }
         self.state.position = position;
     }
@@ -134,7 +142,7 @@ impl Block<Positioned> {
             let mvp = *view_projection * model;
 
             rectangle.mvp = mvp.to_cols_array_2d();
-            rectangle.half_size = [half_size[0], half_size[1]];
+            rectangle.half_size = half_size;
         }
         self.state.position = position;
         self.size = size;

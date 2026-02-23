@@ -32,6 +32,7 @@ const INDICES: &[u16; 6] = &[
 
 #[repr(C, align(16))]
 #[derive(Clone, Copy, Zeroable, Pod, Builder)]
+#[builder(const)]
 pub struct Rectangle {
     pub mvp:           [[f32; 4]; 4],
     pub fill_color:    [f32; 4],
@@ -45,7 +46,7 @@ pub struct Rectangle {
     pub shadow_blur:   f32,
 
     #[doc(hidden)]
-    #[builder(skip)]
+    #[builder(skip = 0.0)]
     _padding: f32,
 }
 
