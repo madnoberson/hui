@@ -76,21 +76,14 @@ impl Rectangle {
     pub const SIZE: usize = size_of::<Self>();
 }
 
-#[derive(PartialEq, Eq)]
-enum Dirtiness {
-    Clean,
-    RedrawRequired,
-    RebuildAndRedrawRequired,
-}
-
 pub(crate) struct RectangleRenderer {
-    render_pipeline: RenderPipeline,
-    vertex_buffer:   Buffer,
-    index_buffer:    Buffer,
-    instance_buffer: Buffer,
-    instances:       SlotMap<RectangleId, Rectangle>,
-    instance_bytes:  Vec<u8>,
-    dirtiness:       Dirtiness,
+    render_pipeline:     RenderPipeline,
+    vertex_buffer:       Buffer,
+    index_buffer:        Buffer,
+    instance_buffer:     Buffer,
+    instances:           SlotMap<RectangleId, Rectangle>,
+    instance_bytes:      Vec<u8>,
+    is_rebuild_required: bool,
 }
 
 impl RectangleRenderer {
@@ -127,38 +120,27 @@ impl RectangleRenderer {
             instances: SlotMap::new(),
             instance_buffer,
             instance_bytes: Vec::new(),
-            dirtiness: Dirtiness::Clean,
+            is_rebuild_required: false,
         }
-    }
-
-    #[must_use]
-    #[inline(always)]
-    pub fn is_redraw_required(&self) -> bool {
-        self.dirtiness != Dirtiness::Clean
     }
 
     #[must_use]
     #[inline(always)]
     pub fn get_mut(&mut self, id: RectangleId) -> Option<&mut Rectangle> {
-        self.dirtiness = Dirtiness::RebuildAndRedrawRequired;
+        self.is_rebuild_required = true;
         self.instances.get_mut(id)
     }
 
     pub fn add(&mut self, instance: &Rectangle) -> RectangleId {
-        if self.dirtiness != Dirtiness::RebuildAndRedrawRequired {
-            self.dirtiness = Dirtiness::RedrawRequired;
-        }
         let id = self.instances.insert(*instance);
-
         let new_instance_bytes = bytemuck::bytes_of(instance);
         self.instance_bytes.extend_from_slice(new_instance_bytes);
-
         id
     }
 
     #[inline(always)]
     pub fn remove(&mut self, id: RectangleId) -> Option<Rectangle> {
-        self.dirtiness = Dirtiness::RebuildAndRedrawRequired;
+        self.is_rebuild_required = true;
         self.instances.remove(id)
     }
 
@@ -167,12 +149,14 @@ impl RectangleRenderer {
             return;
         }
 
-        if self.dirtiness == Dirtiness::RebuildAndRedrawRequired {
+        if self.is_rebuild_required {
             self.instance_bytes.clear();
 
             let instance_bytes_iter =
                 self.instances.values().flat_map(bytemuck::bytes_of);
             self.instance_bytes.extend(instance_bytes_iter);
+
+            self.is_rebuild_required = false;
         }
 
         let bytes_written = self.instances.len() * Rectangle::SIZE;
@@ -199,7 +183,6 @@ impl RectangleRenderer {
             0,
             0..self.instances.len() as u32,
         );
-        self.dirtiness = Dirtiness::Clean
     }
 }
 

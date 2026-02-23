@@ -70,16 +70,19 @@ impl Renderer {
         &mut self,
         id: RectangleId,
     ) -> Option<&mut Rectangle> {
+        self.is_redraw_required = true;
         self.rectangle_renderer.get_mut(id)
     }
 
     #[inline(always)]
     pub fn add_rectangle(&mut self, instance: &Rectangle) -> RectangleId {
+        self.is_redraw_required = true;
         self.rectangle_renderer.add(instance)
     }
 
     #[inline(always)]
     pub fn remove_rectangle(&mut self, id: RectangleId) -> Option<Rectangle> {
+        self.is_redraw_required = true;
         self.rectangle_renderer.remove(id)
     }
 
@@ -89,9 +92,7 @@ impl Renderer {
         surface_texture_view: &TextureView,
         command_encoder: &mut CommandEncoder,
     ) {
-        if self.is_redraw_required
-            || self.rectangle_renderer.is_redraw_required()
-        {
+        if self.is_redraw_required {
             let color_operations = Operations {
                 load:  self.color_operations.load,
                 store: StoreOp::Store,
