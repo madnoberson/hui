@@ -1,5 +1,7 @@
-mod components;
-mod core;
+pub mod components;
+pub mod core;
 
-pub use components::{Block, BlockStyle, block_position_markers};
+pub use components::{
+    Block, BlockStyle, InputState, MouseButtonState, block_states,
+};
 pub use core::{Rectangle, RectangleId, Renderer};

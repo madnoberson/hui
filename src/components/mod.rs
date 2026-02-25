@@ -1,3 +1,5 @@
+mod common;
 mod widgets;
 
-pub use widgets::{Block, BlockStyle, block_position_markers};
+pub use common::{InputState, MouseButtonState};
+pub use widgets::{Block, BlockStyle, block_states};

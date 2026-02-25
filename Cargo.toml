@@ -10,8 +10,14 @@ glam = "^0.30"
 bytemuck = "^1.24"
 slotmap = "^1.1"
 bon = "^3.9"
+getset = "^0.1"
 
 [dependencies.wgpu]
 version = "^27.0"
 default-features = false
 features = ["std", "parking_lot", "wgsl", "dx12"]
+
+[dependencies.winit]
+version = "0.30.*"
+default-features = false
+features = ["x11", "rwh_06"]

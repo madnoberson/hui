@@ -1,10 +1,10 @@
 use bon::Builder;
 use glam::{Mat4, Quat, Vec3};
 
-use crate::{Rectangle, Renderer};
-use block_position_markers::{Positioned, Unpositioned};
+use crate::{InputState, MouseButtonState, Rectangle, Renderer};
+use block_states::{Positioned, Unpositioned};
 
-pub mod block_position_markers {
+pub mod block_states {
     use crate::RectangleId;
 
     pub struct Unpositioned;
@@ -167,6 +167,27 @@ impl Block<Positioned> {
     #[inline(always)]
     pub fn destroy(&self, renderer: &mut Renderer) {
         renderer.remove_rectangle(self.state.rectangle_id);
+    }
+
+    #[must_use]
+    #[inline(always)]
+    pub fn contains(&self, position: [f32; 2]) -> bool {
+        let [x, y] = self.state.position;
+        let [height, width] = self.size;
+
+        position[0] >= x
+            && position[0] <= x + width
+            && position[1] >= y
+            && position[1] <= y + height
+    }
+
+    #[must_use]
+    #[inline(always)]
+    pub fn is_pressed(&self, input_state: &InputState) -> bool {
+        matches!(input_state.left_mouse_button(), MouseButtonState::Down)
+            && input_state
+                .mouse_position()
+                .is_some_and(|pos| self.contains(pos))
     }
 }
 

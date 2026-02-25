@@ -1,3 +1,3 @@
 mod block;
 
-pub use block::{Block, BlockStyle, block_position_markers};
+pub use block::{Block, BlockStyle, block_states};
