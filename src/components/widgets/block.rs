@@ -1,7 +1,10 @@
 use bon::Builder;
 use glam::{Mat4, Quat, Vec3};
 
-use crate::{InputState, MouseButtonState, Rectangle, Renderer};
+use crate::{
+    components::common::{Boundable, InputState, MouseButtonState, Spawnable},
+    core::{Rectangle, Renderer},
+};
 use block_states::{Positioned, Unpositioned};
 
 pub mod block_states {
@@ -49,14 +52,23 @@ impl Block<Unpositioned> {
         Self { state: Unpositioned, style, size }
     }
 
-    #[must_use]
     #[inline(always)]
-    pub fn make_positioned(
+    pub const fn set_size(&mut self, size: [f32; 2]) { self.size = size; }
+
+    #[inline(always)]
+    pub const fn set_style(&mut self, style: BlockStyle) {
+        self.style = style;
+    }
+}
+
+impl Spawnable for Block<Unpositioned> {
+    #[inline(always)]
+    fn spawn(
         self,
         position: [f32; 2],
         view_projection: &Mat4,
         renderer: &mut Renderer,
-    ) -> Block<Positioned> {
+    ) -> impl Boundable {
         Block::<Positioned>::new(
             position,
             self.size,
@@ -64,14 +76,6 @@ impl Block<Unpositioned> {
             view_projection,
             renderer,
         )
-    }
-
-    #[inline(always)]
-    pub const fn set_size(&mut self, size: [f32; 2]) { self.size = size; }
-
-    #[inline(always)]
-    pub const fn set_style(&mut self, style: BlockStyle) {
-        self.style = style;
     }
 }
 
@@ -128,26 +132,6 @@ impl Block<Positioned> {
         self.state.position = position;
     }
 
-    pub fn set_size_and_position(
-        &mut self,
-        size: [f32; 2],
-        position: [f32; 2],
-        view_projection: &Mat4,
-        renderer: &mut Renderer,
-    ) {
-        if let Some(rectangle) =
-            renderer.get_mut_rectangle(self.state.rectangle_id)
-        {
-            let (model, half_size) = build_model(size, position);
-            let mvp = *view_projection * model;
-
-            rectangle.mvp = mvp.to_cols_array_2d();
-            rectangle.half_size = half_size;
-        }
-        self.state.position = position;
-        self.size = size;
-    }
-
     pub fn set_style(&mut self, style: BlockStyle, renderer: &mut Renderer) {
         if let Some(rectangle) =
             renderer.get_mut_rectangle(self.state.rectangle_id)
@@ -188,6 +172,28 @@ impl Block<Positioned> {
             && input_state
                 .mouse_position()
                 .is_some_and(|pos| self.contains(pos))
+    }
+}
+
+impl Boundable for Block<Positioned> {
+    fn set_bounds(
+        &mut self,
+        position: [f32; 2],
+        size: [f32; 2],
+        view_projection: &Mat4,
+        renderer: &mut Renderer,
+    ) {
+        if let Some(rectangle) =
+            renderer.get_mut_rectangle(self.state.rectangle_id)
+        {
+            let (model, half_size) = build_model(size, position);
+            let mvp = *view_projection * model;
+
+            rectangle.mvp = mvp.to_cols_array_2d();
+            rectangle.half_size = half_size;
+        }
+        self.state.position = position;
+        self.size = size;
     }
 }
 

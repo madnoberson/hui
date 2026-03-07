@@ -9,8 +9,10 @@ edition = "2024"
 glam = "^0.30"
 bytemuck = "^1.24"
 slotmap = "^1.1"
+arrayvec = "^0.7"
 bon = "^3.9"
 getset = "^0.1"
+enum_dispatch = "^0.3"
 
 [dependencies.wgpu]
 version = "^27.0"
@@ -21,3 +23,6 @@ features = ["std", "parking_lot", "wgsl", "dx12"]
 version = "0.30.*"
 default-features = false
 features = ["x11", "rwh_06"]
+
+[dev-dependencies]
+rstest = "^0.26"
