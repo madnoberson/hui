@@ -36,6 +36,7 @@ pub struct BlockStyle {
     shadow_spread: f32,
 }
 
+#[derive(Clone)]
 pub struct Block<State = Unpositioned> {
     state: State,
     style: BlockStyle,
