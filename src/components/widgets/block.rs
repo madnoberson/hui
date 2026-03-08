@@ -1,21 +1,21 @@
 use bon::Builder;
 use glam::{Mat4, Quat, Vec3};
 
-use crate::{InputState, MouseButtonState, Rectangle, Renderer};
+use crate::{Bounds, InputState, MouseButtonState, Rectangle, Renderer};
 use block_states::{Positioned, Unpositioned};
 
 pub mod block_states {
-    use crate::RectangleId;
+    use crate::{Bounds, RectangleId};
 
     pub struct Unpositioned;
 
     pub struct Positioned {
         pub(super) rectangle_id: RectangleId,
-        pub(super) position:     [f32; 2],
+        pub(super) bounds:       Bounds,
     }
 }
 
-#[derive(Builder, Clone)]
+#[derive(Clone, Builder)]
 #[builder(const)]
 pub struct BlockStyle {
     #[builder(default = [1.0, 1.0, 1.0, 1.0])]
@@ -40,35 +40,25 @@ pub struct BlockStyle {
 pub struct Block<State = Unpositioned> {
     state: State,
     style: BlockStyle,
-    size:  [f32; 2],
 }
 
 impl Block<Unpositioned> {
     #[must_use]
     #[inline(always)]
-    pub const fn new(size: [f32; 2], style: BlockStyle) -> Self {
-        Self { state: Unpositioned, style, size }
+    pub const fn new(style: BlockStyle) -> Self {
+        Self { state: Unpositioned, style }
     }
 
     #[must_use]
     #[inline(always)]
     pub fn make_positioned(
         self,
-        position: [f32; 2],
+        bounds: Bounds,
         view_projection: &Mat4,
         renderer: &mut Renderer,
     ) -> Block<Positioned> {
-        Block::<Positioned>::new(
-            position,
-            self.size,
-            self.style,
-            view_projection,
-            renderer,
-        )
+        Block::<Positioned>::new(bounds, self.style, view_projection, renderer)
     }
-
-    #[inline(always)]
-    pub const fn set_size(&mut self, size: [f32; 2]) { self.size = size; }
 
     #[inline(always)]
     pub const fn set_style(&mut self, style: BlockStyle) {
@@ -79,21 +69,46 @@ impl Block<Unpositioned> {
 impl Block<Positioned> {
     #[must_use]
     pub fn new(
-        position: [f32; 2],
-        size: [f32; 2],
+        bounds: Bounds,
         style: BlockStyle,
         view_projection: &Mat4,
         renderer: &mut Renderer,
     ) -> Self {
-        let rectangle =
-            build_rectangle(view_projection, position, size, &style);
+        let rectangle = build_rectangle(view_projection, &bounds, &style);
         let rectangle_id = renderer.add_rectangle(&rectangle);
 
-        let state = Positioned { rectangle_id, position };
-        Self { state, style, size }
+        let state = Positioned { rectangle_id, bounds: bounds };
+        Self { state, style }
     }
 
-    pub fn set_size(
+    #[must_use]
+    #[inline(always)]
+    pub const fn position(&self) -> [f32; 2] { self.state.bounds.position }
+
+    #[must_use]
+    #[inline(always)]
+    pub const fn size(&self) -> [f32; 2] { self.state.bounds.size }
+
+    #[must_use]
+    #[inline(always)]
+    pub const fn clip_rect(&self) -> [f32; 4] { self.state.bounds.clip_rect }
+
+    #[inline(always)]
+    const fn set_position(&mut self, position: [f32; 2]) {
+        self.state.bounds.position = position;
+    }
+
+    #[inline(always)]
+    const fn set_size(&mut self, size: [f32; 2]) {
+        self.state.bounds.size = size;
+    }
+
+    #[inline(always)]
+    const fn set_clip_rect(&mut self, clip_rect: [f32; 4]) {
+        self.state.bounds.clip_rect = clip_rect;
+    }
+
+    pub fn update_size(
         &mut self,
         size: [f32; 2],
         view_projection: &Mat4,
@@ -102,16 +117,16 @@ impl Block<Positioned> {
         if let Some(rectangle) =
             renderer.get_mut_rectangle(self.state.rectangle_id)
         {
-            let (model, half_size) = build_model(size, self.state.position);
+            let (model, half_size) = build_model(size, self.position());
             let mvp = *view_projection * model;
 
             rectangle.mvp = mvp.to_cols_array_2d();
             rectangle.half_size = half_size;
         }
-        self.size = size;
+        self.set_size(size);
     }
 
-    pub fn set_position(
+    pub fn update_position(
         &mut self,
         position: [f32; 2],
         view_projection: &Mat4,
@@ -120,36 +135,33 @@ impl Block<Positioned> {
         if let Some(rectangle) =
             renderer.get_mut_rectangle(self.state.rectangle_id)
         {
-            let (model, half_size) = build_model(self.size, position);
+            let (model, half_size) = build_model(self.size(), position);
             let mvp = *view_projection * model;
 
             rectangle.mvp = mvp.to_cols_array_2d();
             rectangle.half_size = half_size;
         }
-        self.state.position = position;
+        self.set_position(position);
     }
 
-    pub fn set_size_and_position(
+    pub fn update_clip_rect(
         &mut self,
-        size: [f32; 2],
-        position: [f32; 2],
-        view_projection: &Mat4,
+        clip_rect: &[f32; 4],
         renderer: &mut Renderer,
     ) {
         if let Some(rectangle) =
             renderer.get_mut_rectangle(self.state.rectangle_id)
         {
-            let (model, half_size) = build_model(size, position);
-            let mvp = *view_projection * model;
-
-            rectangle.mvp = mvp.to_cols_array_2d();
-            rectangle.half_size = half_size;
+            rectangle.clip_rect = *clip_rect;
         }
-        self.state.position = position;
-        self.size = size;
+        self.set_clip_rect(*clip_rect);
     }
 
-    pub fn set_style(&mut self, style: BlockStyle, renderer: &mut Renderer) {
+    pub fn update_style(
+        &mut self,
+        style: BlockStyle,
+        renderer: &mut Renderer,
+    ) {
         if let Some(rectangle) =
             renderer.get_mut_rectangle(self.state.rectangle_id)
         {
@@ -172,9 +184,9 @@ impl Block<Positioned> {
 
     #[must_use]
     #[inline(always)]
-    pub fn contains(&self, position: [f32; 2]) -> bool {
-        let [x, y] = self.state.position;
-        let [height, width] = self.size;
+    pub const fn contains(&self, position: [f32; 2]) -> bool {
+        let [x, y] = self.position();
+        let [height, width] = self.size();
 
         position[0] >= x
             && position[0] <= x + width
@@ -194,11 +206,10 @@ impl Block<Positioned> {
 
 fn build_rectangle(
     view_projection: &Mat4,
-    position: [f32; 2],
-    size: [f32; 2],
+    bounds: &Bounds,
     block_style: &BlockStyle,
 ) -> Rectangle {
-    let (model, half_size) = build_model(size, position);
+    let (model, half_size) = build_model(bounds.size, bounds.position);
     let mvp = view_projection * model;
 
     Rectangle::builder()
@@ -209,6 +220,7 @@ fn build_rectangle(
         .corner_radii(block_style.corner_radii)
         .border_size(block_style.border_size)
         .shadow_color(block_style.shadow_color)
+        .clip_rect(bounds.clip_rect)
         .shadow_offset(block_style.shadow_offset)
         .shadow_blur(block_style.shadow_blur)
         .shadow_spread(block_style.shadow_spread)

@@ -8,11 +8,12 @@ struct VertexInput {
     @location(6)  border_color:  vec4<f32>,
     @location(7)  corner_radii:  vec4<f32>,
     @location(8)  shadow_color:  vec4<f32>,
-    @location(9)  half_size:     vec2<f32>,
-    @location(10) border_size:   f32,
-    @location(11) shadow_spread: f32,
-    @location(12) shadow_offset: vec2<f32>,
-    @location(13) shadow_blur:   f32,
+    @location(9)  clip_rect:     vec4<f32>,
+    @location(10) half_size:     vec2<f32>,
+    @location(11) border_size:   f32,
+    @location(12) shadow_spread: f32,
+    @location(13) shadow_offset: vec2<f32>,
+    @location(14) shadow_blur:   f32,
 }
 
 struct VertexOutput {
@@ -27,6 +28,7 @@ struct VertexOutput {
     @location(7)  @interpolate(flat) shadow_offset:  vec2<f32>,
     @location(8)  @interpolate(flat) shadow_blur:    f32,
     @location(9)  @interpolate(flat) shadow_spread:  f32,
+    @location(10) @interpolate(flat) clip_rect:      vec4<f32>,
 }
 
 @vertex
@@ -54,12 +56,22 @@ fn vs_main(input: VertexInput) -> VertexOutput {
     output.shadow_offset  = input.shadow_offset;
     output.shadow_blur    = input.shadow_blur;
     output.shadow_spread  = input.shadow_spread;
+    output.clip_rect      = input.clip_rect;
 
     return output;
 }
 
 @fragment
 fn fs_main(input: VertexOutput) -> @location(0) vec4<f32> {
+    let clip    = input.clip_rect;
+    let abs_pos = input.local_position + input.half_size;
+
+    if abs_pos.x < clip.x
+        || abs_pos.x > clip.x + clip.z
+        || abs_pos.y < clip.y
+        || abs_pos.y > clip.y + clip.w
+    { discard; }
+
     let p  = input.local_position;
     let hs = input.half_size;
     let r  = input.corner_radii;
