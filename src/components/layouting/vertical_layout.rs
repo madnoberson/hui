@@ -10,7 +10,7 @@ pub enum VerticalLayoutItem {
 }
 
 impl VerticalLayoutItem {
-    pub fn height(&self) -> &DesiredSize {
+    pub const fn height(&self) -> &DesiredSize {
         match self {
             VerticalLayoutItem::Widget { height, .. } => height,
             VerticalLayoutItem::Spacer(height) => height,

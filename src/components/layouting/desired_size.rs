@@ -6,7 +6,7 @@ pub enum DesiredSize {
 }
 
 impl DesiredSize {
-    pub fn min_value(&self) -> f32 {
+    pub const fn min_value(&self) -> f32 {
         match self {
             Self::Fixed(value) => *value,
             Self::Constrained { min_value, .. } => *min_value,
