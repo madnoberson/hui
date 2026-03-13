@@ -1,5 +1,3 @@
-#![feature(maybe_uninit_array_assume_init)]
-
 pub mod components;
 pub mod core;
 
