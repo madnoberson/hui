@@ -1,7 +1,10 @@
 use bon::Builder;
 use glam::{Mat4, Quat, Vec3};
 
-use crate::{Bounds, InputState, MouseButtonState, Rectangle, Renderer};
+use crate::{
+    components::common::{Bounds, InputState, MouseButtonState},
+    core::{Rectangle, Renderer},
+};
 use block_states::{Positioned, Unpositioned};
 
 pub mod block_states {

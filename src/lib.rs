@@ -1,7 +1,10 @@
+#![feature(maybe_uninit_array_assume_init)]
+
 pub mod components;
 pub mod core;
 
 pub use components::{
-    Block, BlockStyle, Bounds, InputState, MouseButtonState, block_states,
+    Block, BlockStyle, Bounds, DesiredSize, InputState, MouseButtonState,
+    VerticalLayoutItem, block_states, fixed_vertical_layout,
 };
 pub use core::{Rectangle, RectangleId, Renderer};

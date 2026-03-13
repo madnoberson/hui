@@ -21,3 +21,6 @@ features = ["std", "parking_lot", "wgsl", "dx12"]
 version = "0.30.*"
 default-features = false
 features = ["x11", "rwh_06"]
+
+[dev-dependencies]
+rstest = "^0.26"
