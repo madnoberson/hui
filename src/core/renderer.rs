@@ -1,3 +1,4 @@
+use rayon::ThreadPool;
 use wgpu::{
     Color, CommandEncoder, Device, Extent3d, LoadOp, Operations, Queue,
     RenderPassColorAttachment, RenderPassDescriptor, StoreOp,
@@ -22,6 +23,7 @@ impl Renderer {
         device: &Device,
         surface_config: &SurfaceConfiguration,
         color_operations: Operations<Color>,
+        thread_pool: &ThreadPool,
     ) -> Self {
         let (offscreen_texture, offscreen_texture_view) =
             create_offscreen_texture(
@@ -31,13 +33,17 @@ impl Renderer {
                 surface_config.format,
             );
 
-        let rectangle_renderer =
-            RectangleRenderer::new(device, surface_config.format);
-        let composite_renderer = CompositeRenderer::new(
-            device,
-            surface_config.format,
-            &offscreen_texture_view,
-        );
+        let create_rectangle_renderer =
+            || RectangleRenderer::new(device, surface_config.format);
+        let create_composite_renderer = || {
+            CompositeRenderer::new(
+                device,
+                surface_config.format,
+                &offscreen_texture_view,
+            )
+        };
+        let (rectangle_renderer, composite_renderer) = thread_pool
+            .join(create_rectangle_renderer, create_composite_renderer);
 
         Self {
             offscreen_texture,

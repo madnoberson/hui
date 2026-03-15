@@ -674,6 +674,7 @@ dependencies = [
  "criterion",
  "getset",
  "glam",
+ "rayon",
  "rstest",
  "slotmap",
  "wgpu",

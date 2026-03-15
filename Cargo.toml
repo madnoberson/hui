@@ -11,6 +11,7 @@ bytemuck = "^1.24"
 slotmap = "^1.1"
 bon = "^3.9"
 getset = "^0.1"
+rayon = "^1.11"
 
 [dependencies.wgpu]
 version = "^27.0"
