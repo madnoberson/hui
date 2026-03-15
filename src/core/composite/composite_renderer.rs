@@ -10,7 +10,7 @@ use wgpu::{
     TextureViewDimension, VertexState,
 };
 
-pub(crate) struct CompositeRenderer {
+pub struct CompositeRenderer {
     render_pipeline:   RenderPipeline,
     bind_group_layout: BindGroupLayout,
     bind_group:        BindGroup,

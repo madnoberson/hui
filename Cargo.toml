@@ -24,3 +24,12 @@ features = ["x11", "rwh_06"]
 
 [dev-dependencies]
 rstest = "^0.26"
+criterion = "^0.7"
+
+[features]
+bench = []
+
+[[bench]]
+name = "rectangle_store"
+harness = false
+required-features = ["bench"]
