@@ -14,12 +14,10 @@ fn make_rect() -> Rectangle {
         .border_color([0.0, 0.0, 0.0, 1.0])
         .corner_radii([4.0, 4.0, 4.0, 4.0])
         .shadow_color([0.0, 0.0, 0.0, 0.5])
+        .outline_color([0.0, 0.0, 1.0, 1.0])
         .clip_rect([0.0, 0.0, 1920.0, 1080.0])
-        .half_size([50.0, 25.0])
-        .border_size(1.0)
-        .shadow_spread(0.0)
-        .shadow_offset([0.0, 0.0])
-        .shadow_blur(0.0)
+        .rect_and_shadow([50.0, 25.0, 0.0, 0.0])
+        .sizes([1.0, 0.0, 0.0, 1.0])
         .build()
 }
 

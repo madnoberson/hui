@@ -24,9 +24,9 @@ pub struct BlockStyle {
     #[builder(default = [1.0, 1.0, 1.0, 1.0])]
     fill_color:    [f32; 4],
     #[builder(default = [0.0, 0.0, 0.0, 0.0])]
-    border_color:  [f32; 4],
-    #[builder(default = [0.0, 0.0, 0.0, 0.0])]
     corner_radii:  [f32; 4],
+    #[builder(default = [0.0, 0.0, 0.0, 0.0])]
+    border_color:  [f32; 4],
     #[builder(default = 0.0)]
     border_size:   f32,
     #[builder(default = [0.0, 0.0, 0.0, 0.0])]
@@ -37,6 +37,10 @@ pub struct BlockStyle {
     shadow_blur:   f32,
     #[builder(default = 0.0)]
     shadow_spread: f32,
+    #[builder(default = [1.0, 1.0, 1.0, 1.0])]
+    outline_color: [f32; 4],
+    #[builder(default = 0.0)]
+    outline_size:  f32,
 }
 
 #[derive(Clone)]
@@ -133,7 +137,12 @@ impl Block<Positioned> {
             let mvp = *view_projection * model;
 
             rectangle.mvp = mvp.to_cols_array_2d();
-            rectangle.half_size = half_size;
+            rectangle.sizes = [
+                half_size[0],
+                half_size[1],
+                self.style.shadow_offset[0],
+                self.style.shadow_offset[1],
+            ];
         }
         self.set_size(size);
     }
@@ -152,7 +161,12 @@ impl Block<Positioned> {
             let mvp = *view_projection * model;
 
             rectangle.mvp = mvp.to_cols_array_2d();
-            rectangle.half_size = half_size;
+            rectangle.sizes = [
+                half_size[0],
+                half_size[1],
+                self.style.shadow_offset[0],
+                self.style.shadow_offset[1],
+            ];
         }
         self.set_position(position);
     }
@@ -182,10 +196,13 @@ impl Block<Positioned> {
             rectangle.border_color = style.border_color;
             rectangle.corner_radii = style.corner_radii;
             rectangle.shadow_color = style.shadow_color;
-            rectangle.border_size = style.border_size;
-            rectangle.shadow_spread = style.shadow_spread;
-            rectangle.shadow_offset = style.shadow_offset;
-            rectangle.shadow_blur = style.shadow_blur;
+            rectangle.outline_color = style.outline_color;
+            rectangle.sizes = [
+                style.border_size,
+                style.shadow_spread,
+                style.shadow_blur,
+                style.outline_size,
+            ];
         }
         self.style = style;
     }
@@ -226,18 +243,28 @@ fn build_rectangle(
     let (model, half_size) = build_model(bounds.size, bounds.position, dpr);
     let mvp = view_projection * model;
 
+    let rect_and_shadow = [
+        half_size[0],
+        half_size[1],
+        block_style.shadow_offset[0],
+        block_style.shadow_offset[1],
+    ];
+    let sizes = [
+        block_style.border_size,
+        block_style.shadow_spread,
+        block_style.shadow_blur,
+        block_style.outline_size,
+    ];
     Rectangle::builder()
         .mvp(mvp.to_cols_array_2d())
-        .half_size(half_size)
         .fill_color(block_style.fill_color)
         .border_color(block_style.border_color)
         .corner_radii(block_style.corner_radii)
-        .border_size(block_style.border_size)
         .shadow_color(block_style.shadow_color)
+        .outline_color(block_style.outline_color)
         .clip_rect(bounds.clip_rect)
-        .shadow_offset(block_style.shadow_offset)
-        .shadow_blur(block_style.shadow_blur)
-        .shadow_spread(block_style.shadow_spread)
+        .rect_and_shadow(rect_and_shadow)
+        .sizes(sizes)
         .build()
 }
 
