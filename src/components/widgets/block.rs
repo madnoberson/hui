@@ -58,9 +58,16 @@ impl Block<Unpositioned> {
         self,
         bounds: Bounds,
         view_projection: &Mat4,
+        dpr: f32,
         renderer: &mut Renderer,
     ) -> Block<Positioned> {
-        Block::<Positioned>::new(bounds, self.style, view_projection, renderer)
+        Block::<Positioned>::new(
+            bounds,
+            self.style,
+            view_projection,
+            dpr,
+            renderer,
+        )
     }
 
     #[inline(always)]
@@ -75,9 +82,10 @@ impl Block<Positioned> {
         bounds: Bounds,
         style: BlockStyle,
         view_projection: &Mat4,
+        dpr: f32,
         renderer: &mut Renderer,
     ) -> Self {
-        let rectangle = build_rectangle(view_projection, &bounds, &style);
+        let rectangle = build_rectangle(view_projection, dpr, &bounds, &style);
         let rectangle_id = renderer.add_rectangle(&rectangle);
 
         let state = Positioned { rectangle_id, bounds: bounds };
@@ -115,12 +123,13 @@ impl Block<Positioned> {
         &mut self,
         size: [f32; 2],
         view_projection: &Mat4,
+        dpr: f32,
         renderer: &mut Renderer,
     ) {
         if let Some(rectangle) =
             renderer.get_mut_rectangle(self.state.rectangle_id)
         {
-            let (model, half_size) = build_model(size, self.position());
+            let (model, half_size) = build_model(size, self.position(), dpr);
             let mvp = *view_projection * model;
 
             rectangle.mvp = mvp.to_cols_array_2d();
@@ -133,12 +142,13 @@ impl Block<Positioned> {
         &mut self,
         position: [f32; 2],
         view_projection: &Mat4,
+        dpr: f32,
         renderer: &mut Renderer,
     ) {
         if let Some(rectangle) =
             renderer.get_mut_rectangle(self.state.rectangle_id)
         {
-            let (model, half_size) = build_model(self.size(), position);
+            let (model, half_size) = build_model(self.size(), position, dpr);
             let mvp = *view_projection * model;
 
             rectangle.mvp = mvp.to_cols_array_2d();
@@ -209,10 +219,11 @@ impl Block<Positioned> {
 
 fn build_rectangle(
     view_projection: &Mat4,
+    dpr: f32,
     bounds: &Bounds,
     block_style: &BlockStyle,
 ) -> Rectangle {
-    let (model, half_size) = build_model(bounds.size, bounds.position);
+    let (model, half_size) = build_model(bounds.size, bounds.position, dpr);
     let mvp = view_projection * model;
 
     Rectangle::builder()
@@ -230,7 +241,14 @@ fn build_rectangle(
         .build()
 }
 
-fn build_model(size: [f32; 2], position: [f32; 2]) -> (Mat4, [f32; 2]) {
+fn build_model(
+    size: [f32; 2],
+    position: [f32; 2],
+    dpr: f32,
+) -> (Mat4, [f32; 2]) {
+    let size = [size[0] * dpr, size[1] * dpr];
+    let position = [position[0] * dpr, position[1] * dpr];
+
     let half_size = [size[0] / 2.0, size[1] / 2.0];
     let center =
         Vec3::new(position[0] + half_size[0], position[1] + half_size[1], 0.0);
